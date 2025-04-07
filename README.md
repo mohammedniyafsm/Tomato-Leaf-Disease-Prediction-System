@@ -1,30 +1,20 @@
-🍅 Tomato Leaf Disease Prediction System
-This project is a machine learning-powered web application that predicts tomato leaf diseases from uploaded leaf images. Leveraging deep learning with TensorFlow/Keras, the system classifies tomato leaf images into various disease categories or marks them as healthy.
+🍅Tomato Leaf Disease Prediction System: 
+A machine learning-powered web application designed to predict tomato leaf diseases from uploaded images. This project leverages a Convolutional Neural Network (CNN) built with TensorFlow/Keras to classify tomato leaf images into disease categories or as healthy. Integrated with a Flask backend, the system allows users to upload images via an HTML/CSS frontend and receive real-time predictions. Git is used for version control and collaboration.  
 
-🔍 Key Features:
-
-Trained CNN model for tomato leaf disease classification.
-
-Flask-based web application for image uploads and real-time predictions.
-
-User-friendly frontend with HTML/CSS.
-
-Git-based version control for tracking code changes.
+🔍 Key Features: 
+- Trained CNN model for accurate disease classification.  
+- Flask-based API for image uploads and predictions.  
+- Simple, user-friendly web interface.  
+- End-to-end ML pipeline from data processing to deployment.  
 
 🚀 Tech Stack:
+- Python, TensorFlow/Keras (model training)  
+- Flask (backend/deployment)  
+- HTML/CSS (frontend)  
+- Git (version control)  
 
-Python, TensorFlow/Keras for model building and training.
+🎯 Learning Outcomes: 
+- Develop skills in image-based disease prediction using deep learning.  
+- Gain experience deploying ML models in a Flask web app.  
+- Master version control and collaboration with Git.  
 
-Flask for backend API and deployment.
-
-HTML/CSS for the frontend interface.
-
-Git for source control and collaboration.
-
-🎯 Learning Outcomes:
-
-Hands-on experience with image classification using deep learning.
-
-Deploying ML models in real-world web apps.
-
-Understanding of end-to-end ML pipelines from data to deployment.
