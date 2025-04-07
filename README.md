@@ -1,4 +1,5 @@
 🍅Tomato Leaf Disease Prediction System: 
+
 A machine learning-powered web application designed to predict tomato leaf diseases from uploaded images. This project leverages a Convolutional Neural Network (CNN) built with TensorFlow/Keras to classify tomato leaf images into disease categories or as healthy. Integrated with a Flask backend, the system allows users to upload images via an HTML/CSS frontend and receive real-time predictions. Git is used for version control and collaboration.  
 
 🔍 Key Features: 
