@@ -1,94 +1,85 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 import numpy as np
 import os
-import tensorflow as tf
-import logging
 from werkzeug.utils import secure_filename
 
+# Initialize the Flask app
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes (frontend-backend interaction)
 
-# Check if model file exists
-if not os.path.exists('InceptionV3_256.keras'):
-    print("Error: Model file 'InceptionV3_256.keras' not found.")
-    exit(1)
+# Load the trained Keras model
+model = load_model('InceptionV3_256.keras')  # ✅ Ensure this file exists in the same directory
 
-# Load model with error handling
-try:
-    model = load_model('InceptionV3_256.keras')
-    print("Model loaded successfully.")
-except Exception as e:
-    print(f"Error loading model: {e}")
-    exit(1)
-
-IMG_WIDTH = 256
-IMG_HEIGHT = 256
-
-# Define class names matching your index mappings
+# Class names (must match the model's training output)
 class_names = [
-    'Bacterial Spot',      # 0
-    'Early Blight',        # 1
-    'Late Blight',         # 2
-    'Leaf Mold',           # 3
-    'Septoria Leaf Spot',  # 4
-    'Spider Mites',        # 5
-    'Target Spot',         # 6
-    'Yellow Leaf Curl Virus',  # 7
-    'Mosaic Virus',        # 8
-    'Healthy'              # 9
+    'Bacterial Spot', 'Early Blight', 'Late Blight', 'Leaf Mold', 'Septoria Leaf Spot',
+    'Spider Mites', 'Target Spot', 'Yellow Leaf Curl Virus', 'Mosaic Virus', 'Healthy'
 ]
 
+# Folder for uploaded images
 UPLOAD_FOLDER = 'uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# 🔍 Disease treatment suggestions
+def get_treatment(disease_name):
+    treatment_dict = {
+        'Bacterial Spot': 'Apply copper-based fungicides.',
+        'Early Blight': 'Remove infected leaves and apply fungicides.',
+        'Late Blight': 'Apply fungicides and remove affected plant parts.',
+        'Leaf Mold': 'Increase air circulation and remove infected leaves.',
+        'Septoria Leaf Spot': 'Remove infected leaves and apply fungicide.',
+        'Spider Mites': 'Use insecticidal soap to control pests.',
+        'Target Spot': 'Apply fungicides to control infection.',
+        'Yellow Leaf Curl Virus': 'Remove infected plants and control vector pests.',
+        'Mosaic Virus': 'Remove infected plants to prevent spread.',
+        'Healthy': 'No treatment needed.'
+    }
+    return treatment_dict.get(disease_name, 'No treatment information available.')
 
+# 🧠 Prediction logic
 def predict_image(img_path):
-    try:
-        img = image.load_img(img_path, target_size=(IMG_WIDTH, IMG_HEIGHT))
-        img_array = image.img_to_array(img)
-        img_array = np.expand_dims(img_array, axis=0)
-        img_array /= 255.0
-        prediction = model.predict(img_array, verbose=0)
-        predicted_class = np.argmax(prediction[0])
-        confidence = float(prediction[0][predicted_class])  # Convert to Python float
-        probabilities = {class_name: float(prob) for class_name, prob in zip(class_names, prediction[0])}  # Convert all to float
-        logger.info(f"Prediction for {img_path}: {probabilities}")
-        return class_names[predicted_class], confidence, probabilities
-    except Exception as e:
-        logger.error(f"Prediction error for {img_path}: {e}")
-        raise
+    img = image.load_img(img_path, target_size=(256, 256))  # Ensure size matches model input
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)  # (1, 256, 256, 3)
+    img_array = img_array / 255.0  # Normalize pixel values
 
-@app.route('/')
-def home():
-    return render_template('index.html')
+    prediction = model.predict(img_array)
+    predicted_index = np.argmax(prediction)
+    predicted_class = class_names[predicted_index]
+    confidence = float(np.max(prediction))  # Convert float32 to float for JSON
 
-@app.route('/predict', methods=['POST'])
+    return predicted_class, confidence
+
+# 📸 Prediction endpoint
+@app.route('/api/predict', methods=['POST'])
 def predict():
-    if 'file' not in request.files:
+    if 'leafImage' not in request.files:
         return jsonify({'error': 'No file part'}), 400
-    file = request.files['file']
+
+    file = request.files['leafImage']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
-    if file:
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
-        try:
-            class_name, confidence, probabilities = predict_image(file_path)
-            if confidence < 0.7:  # Threshold
-                return jsonify({'prediction': 'Uncertain', 'confidence': confidence, 'probabilities': probabilities})
-            os.remove(file_path)
-            return jsonify({'prediction': class_name, 'confidence': confidence, 'probabilities': probabilities})
-        except Exception as e:
-            os.remove(file_path) if os.path.exists(file_path) else None
-            return jsonify({'error': str(e)}), 500
 
+    try:
+        filename = secure_filename(file.filename)
+        img_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(img_path)
+
+        # Get prediction and treatment
+        predicted_class, confidence = predict_image(img_path)
+        result = {
+            'disease': predicted_class,
+            'confidence': round(confidence * 100, 2),  # Percentage
+            'treatment': get_treatment(predicted_class)
+        }
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 🚀 Run the app
 if __name__ == '__main__':
-    print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)

@@ -1,0 +1,13 @@
+# Ignore virtual environment directories
+venv/
+env/
+*.env
+
+# Ignore model files
+*.keras
+*.h5
+
+# Optional: Ignore other common files (e.g., Python bytecode files)
+__pycache__/
+*.pyc
+*.pyo
